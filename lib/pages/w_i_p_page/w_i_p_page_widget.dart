@@ -1,5 +1,6 @@
 import '/auth/custom_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
+import '/flutter_flow/customer_qr_payload.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -39,33 +40,44 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
+      final customerPayload = CustomerQrPayload.parse(widget.customerUuid);
+
+      if (!customerPayload.isValid) {
+        await showDialog(
+          context: context,
+          builder: (alertDialogContext) {
+            return AlertDialog(
+              title: Text('QR inválido'),
+              content: Text(
+                'El código escaneado no contiene información válida.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(alertDialogContext),
+                  child: Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+
+        context.pushNamed(HomePageWidget.routeName);
+
+        return;
+      }
+
       _model.assignOutput = await LoadsGroup.assignLoadCall.call(
-        customer: widget.customerUuid,
+        customer: customerPayload.customerValueForLoad,
+        vehicle: customerPayload.vehicleUuid,
+        fleet: customerPayload.fleetUuid,
         token: currentAuthenticationToken,
-        product: '2' ==
-                getJsonField(
-                  widget.bomb,
-                  r'''$.codprd''',
-                ).toString()
+        product: '2' == getJsonField(widget.bomb, r'''$.codprd''').toString()
             ? 'magna'
             : 'premium',
-        quantity: (getJsonField(
-          widget.bomb,
-          r'''$.can''',
-        ).floor())
-            .toString(),
-        price: getJsonField(
-          widget.bomb,
-          r'''$.pre''',
-        ).toString(),
-        total: getJsonField(
-          widget.bomb,
-          r'''$.mto''',
-        ).toString(),
-        date: getJsonField(
-          widget.bomb,
-          r'''$.datetime_combined''',
-        ).toString(),
+        quantity: (getJsonField(widget.bomb, r'''$.can''').floor()).toString(),
+        price: getJsonField(widget.bomb, r'''$.pre''').toString(),
+        total: getJsonField(widget.bomb, r'''$.mto''').toString(),
+        date: getJsonField(widget.bomb, r'''$.datetime_combined''').toString(),
       );
 
       if ((_model.assignOutput?.succeeded ?? true)) {
@@ -97,8 +109,9 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
           builder: (alertDialogContext) {
             return AlertDialog(
               title: Text('Error de Servidor'),
-              content:
-                  Text('Ha ocurrido un error al asignar la carga al cliente.'),
+              content: Text(
+                'Ha ocurrido un error al asignar la carga al cliente.',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(alertDialogContext),
@@ -158,21 +171,21 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
                     'Estamos trabajando en ello...\nEsto tomará sólo un par de segundos.',
                     textAlign: TextAlign.center,
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
-                          font: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w300,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontStyle,
-                          ),
-                          color:
-                              FlutterFlowTheme.of(context).secondaryBackground,
-                          fontSize: 14.0,
-                          letterSpacing: 0.0,
-                          fontWeight: FontWeight.w300,
-                          fontStyle:
-                              FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                          lineHeight: 1.5,
-                        ),
+                      font: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w300,
+                        fontStyle: FlutterFlowTheme.of(
+                          context,
+                        ).bodyMedium.fontStyle,
+                      ),
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      fontSize: 14.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w300,
+                      fontStyle: FlutterFlowTheme.of(
+                        context,
+                      ).bodyMedium.fontStyle,
+                      lineHeight: 1.5,
+                    ),
                   ),
                 ],
               ),

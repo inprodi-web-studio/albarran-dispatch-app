@@ -14,9 +14,7 @@ const _kPrivateApiFunctionName = 'ffPrivateApiCall';
 class AuthGroup {
   static String getBaseUrl() =>
       'https://albarran-gas-fgajf.ondigitalocean.app/api';
-  static Map<String, String> headers = {
-    'ngrok-skip-browser-warning': 'true',
-  };
+  static Map<String, String> headers = {'ngrok-skip-browser-warning': 'true'};
   static LoginCall loginCall = LoginCall();
   static SelectBombsCall selectBombsCall = SelectBombsCall();
   static LogoutCall logoutCall = LogoutCall();
@@ -30,7 +28,8 @@ class LoginCall {
   }) async {
     final baseUrl = AuthGroup.getBaseUrl();
 
-    final ffApiRequestBody = '''
+    final ffApiRequestBody =
+        '''
 {
   "email": "${email}",
   "password": "${password}",
@@ -40,9 +39,7 @@ class LoginCall {
       callName: 'Login',
       apiUrl: '${baseUrl}/dispatcher/auth/login',
       callType: ApiCallType.POST,
-      headers: {
-        'ngrok-skip-browser-warning': 'true',
-      },
+      headers: {'ngrok-skip-browser-warning': 'true'},
       params: {},
       body: ffApiRequestBody,
       bodyType: BodyType.JSON,
@@ -55,42 +52,24 @@ class LoginCall {
     );
   }
 
-  String? token(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.token''',
-      ));
-  String? uuid(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.uuid''',
-      ));
-  String? name(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.name''',
-      ));
-  String? lastName(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.lastName''',
-      ));
-  String? email(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.email''',
-      ));
-  String? phone(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.phone''',
-      ));
-  String? errorKey(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.key''',
-      ));
-  String? gender(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.gender''',
-      ));
-  String? birthdate(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.birthdate''',
-      ));
+  String? token(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.token'''));
+  String? uuid(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.uuid'''));
+  String? name(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.name'''));
+  String? lastName(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.lastName'''));
+  String? email(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.email'''));
+  String? phone(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.phone'''));
+  String? errorKey(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.key'''));
+  String? gender(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.gender'''));
+  String? birthdate(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.birthdate'''));
 }
 
 class SelectBombsCall {
@@ -101,7 +80,8 @@ class SelectBombsCall {
     final baseUrl = AuthGroup.getBaseUrl();
     final bombs = _serializeList(bombsList);
 
-    final ffApiRequestBody = '''
+    final ffApiRequestBody =
+        '''
 {
   "bombs": ${bombs}
 }''';
@@ -127,9 +107,7 @@ class SelectBombsCall {
 }
 
 class LogoutCall {
-  Future<ApiCallResponse> call({
-    String? token = '',
-  }) async {
+  Future<ApiCallResponse> call({String? token = ''}) async {
     final baseUrl = AuthGroup.getBaseUrl();
 
     return ApiManager.instance.makeApiCall(
@@ -157,31 +135,21 @@ class LogoutCall {
 /// Start Bombs Group Code
 
 class BombsGroup {
-  static String getBaseUrl({
-    String? token = '',
-  }) =>
+  static String getBaseUrl({String? token = ''}) =>
       'https://albarran-gas-fgajf.ondigitalocean.app/api';
-  static Map<String, String> headers = {
-    'Authorization': 'Bearer [token]',
-  };
+  static Map<String, String> headers = {'Authorization': 'Bearer [token]'};
   static FindManyBombsCall findManyBombsCall = FindManyBombsCall();
 }
 
 class FindManyBombsCall {
-  Future<ApiCallResponse> call({
-    String? token = '',
-  }) async {
-    final baseUrl = BombsGroup.getBaseUrl(
-      token: token,
-    );
+  Future<ApiCallResponse> call({String? token = ''}) async {
+    final baseUrl = BombsGroup.getBaseUrl(token: token);
 
     return ApiManager.instance.makeApiCall(
       callName: 'Find Many Bombs',
       apiUrl: '${baseUrl}/dispatcher/bombs',
       callType: ApiCallType.GET,
-      headers: {
-        'Authorization': 'Bearer ${token}',
-      },
+      headers: {'Authorization': 'Bearer ${token}'},
       params: {},
       returnBody: true,
       encodeBodyUtf8: false,
@@ -198,32 +166,21 @@ class FindManyBombsCall {
 /// Start Customers Group Code
 
 class CustomersGroup {
-  static String getBaseUrl({
-    String? token = '',
-  }) =>
+  static String getBaseUrl({String? token = ''}) =>
       'https://albarran-gas-fgajf.ondigitalocean.app/api';
-  static Map<String, String> headers = {
-    'Authorization': 'Bearer [token]',
-  };
+  static Map<String, String> headers = {'Authorization': 'Bearer [token]'};
   static FindOneCustomerCall findOneCustomerCall = FindOneCustomerCall();
 }
 
 class FindOneCustomerCall {
-  Future<ApiCallResponse> call({
-    String? uuid = '',
-    String? token = '',
-  }) async {
-    final baseUrl = CustomersGroup.getBaseUrl(
-      token: token,
-    );
+  Future<ApiCallResponse> call({String? uuid = '', String? token = ''}) async {
+    final baseUrl = CustomersGroup.getBaseUrl(token: token);
 
     return ApiManager.instance.makeApiCall(
       callName: 'Find One Customer',
       apiUrl: '${baseUrl}/dispatcher/customers/${uuid}',
       callType: ApiCallType.GET,
-      headers: {
-        'Authorization': 'Bearer ${token}',
-      },
+      headers: {'Authorization': 'Bearer ${token}'},
       params: {},
       returnBody: true,
       encodeBodyUtf8: false,
@@ -240,36 +197,23 @@ class FindOneCustomerCall {
 /// Start Loads Group Code
 
 class LoadsGroup {
-  static String getBaseUrl({
-    String? token = '',
-  }) =>
+  static String getBaseUrl({String? token = ''}) =>
       'https://albarran-gas-fgajf.ondigitalocean.app/api';
-  static Map<String, String> headers = {
-    'Authorization': 'Bearer [token]',
-  };
+  static Map<String, String> headers = {'Authorization': 'Bearer [token]'};
   static FindLastLoadCall findLastLoadCall = FindLastLoadCall();
   static AssignLoadCall assignLoadCall = AssignLoadCall();
 }
 
 class FindLastLoadCall {
-  Future<ApiCallResponse> call({
-    int? bombId,
-    String? token = '',
-  }) async {
-    final baseUrl = LoadsGroup.getBaseUrl(
-      token: token,
-    );
+  Future<ApiCallResponse> call({int? bombId, String? token = ''}) async {
+    final baseUrl = LoadsGroup.getBaseUrl(token: token);
 
     return ApiManager.instance.makeApiCall(
       callName: 'Find Last Load',
       apiUrl: '${baseUrl}/dispatcher/loads/${bombId}',
       callType: ApiCallType.GET,
-      headers: {
-        'Authorization': 'Bearer ${token}',
-      },
-      params: {
-        'last': "true",
-      },
+      headers: {'Authorization': 'Bearer ${token}'},
+      params: {'last': "true"},
       returnBody: true,
       encodeBodyUtf8: false,
       decodeUtf8: false,
@@ -279,15 +223,15 @@ class FindLastLoadCall {
     );
   }
 
-  String? date(dynamic response) => castToType<String>(getJsonField(
-        response,
-        r'''$.datetime_combined''',
-      ));
+  String? date(dynamic response) =>
+      castToType<String>(getJsonField(response, r'''$.datetime_combined'''));
 }
 
 class AssignLoadCall {
   Future<ApiCallResponse> call({
     String? customer = '',
+    String? vehicle,
+    String? fleet,
     String? product = '',
     String? quantity = '',
     String? price = '',
@@ -295,13 +239,14 @@ class AssignLoadCall {
     String? date = '',
     String? token = '',
   }) async {
-    final baseUrl = LoadsGroup.getBaseUrl(
-      token: token,
-    );
+    final baseUrl = LoadsGroup.getBaseUrl(token: token);
 
-    final ffApiRequestBody = '''
+    final ffApiRequestBody =
+        '''
 {
   "customer": "${customer}",
+  "vehicle": ${vehicle == null ? 'null' : '"${vehicle}"'},
+  "fleet": ${fleet == null ? 'null' : '"${fleet}"'},
   "product": "${product}",
   "quantity": ${quantity},
   "price": ${price},
@@ -312,9 +257,7 @@ class AssignLoadCall {
       callName: 'Assign Load',
       apiUrl: '${baseUrl}/dispatcher/loads',
       callType: ApiCallType.POST,
-      headers: {
-        'Authorization': 'Bearer ${token}',
-      },
+      headers: {'Authorization': 'Bearer ${token}'},
       params: {},
       body: ffApiRequestBody,
       bodyType: BodyType.JSON,
