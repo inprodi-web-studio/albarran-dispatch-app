@@ -28,8 +28,7 @@ class LoginCall {
   }) async {
     final baseUrl = AuthGroup.getBaseUrl();
 
-    final ffApiRequestBody =
-        '''
+    final ffApiRequestBody = '''
 {
   "email": "${email}",
   "password": "${password}",
@@ -80,8 +79,7 @@ class SelectBombsCall {
     final baseUrl = AuthGroup.getBaseUrl();
     final bombs = _serializeList(bombsList);
 
-    final ffApiRequestBody =
-        '''
+    final ffApiRequestBody = '''
 {
   "bombs": ${bombs}
 }''';
@@ -241,8 +239,7 @@ class AssignLoadCall {
   }) async {
     final baseUrl = LoadsGroup.getBaseUrl(token: token);
 
-    final ffApiRequestBody =
-        '''
+    final ffApiRequestBody = '''
 {
   "customer": "${customer}",
   "vehicle": ${vehicle == null ? 'null' : '"${vehicle}"'},
@@ -272,6 +269,55 @@ class AssignLoadCall {
 }
 
 /// End Loads Group Code
+
+/// Start Promotions Group Code
+
+class PromotionsGroup {
+  static String getBaseUrl({String? token = ''}) =>
+      'https://albarran-gas-fgajf.ondigitalocean.app/api';
+  static Map<String, String> headers = {'Authorization': 'Bearer [token]'};
+  static ResolvePromotionCall resolvePromotionCall = ResolvePromotionCall();
+}
+
+class ResolvePromotionCall {
+  Future<ApiCallResponse> call({
+    String? customer = '',
+    String? vehicle,
+    String? fleet,
+    String? quantity,
+    String? token = '',
+  }) async {
+    final baseUrl = PromotionsGroup.getBaseUrl(token: token);
+
+    final parsedQuantity = (quantity ?? '').trim();
+
+    final ffApiRequestBody = '''
+{
+  "customer": "${customer}",
+  "vehicle": ${vehicle == null ? 'null' : '"${vehicle}"'},
+  "fleet": ${fleet == null ? 'null' : '"${fleet}"'},
+  "quantity": ${parsedQuantity.isEmpty ? 'null' : parsedQuantity}
+}''';
+
+    return ApiManager.instance.makeApiCall(
+      callName: 'Resolve Promotion',
+      apiUrl: '${baseUrl}/dispatcher/promotions/resolve',
+      callType: ApiCallType.POST,
+      headers: {'Authorization': 'Bearer ${token}'},
+      params: {},
+      body: ffApiRequestBody,
+      bodyType: BodyType.JSON,
+      returnBody: true,
+      encodeBodyUtf8: false,
+      decodeUtf8: false,
+      cache: false,
+      isStreamingApi: false,
+      alwaysAllowBody: false,
+    );
+  }
+}
+
+/// End Promotions Group Code
 
 class ApiPagingParams {
   int nextPageNumber = 0;

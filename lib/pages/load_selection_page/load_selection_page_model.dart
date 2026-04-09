@@ -20,6 +20,8 @@ class LoadSelectionPageModel extends FlutterFlowModel<LoadSelectionPageWidget> {
   String? apiRequestLastUniqueKey;
   // Stores action output result for [Backend Call - API (Find Last Load)] action in Button widget.
   ApiCallResponse? bombOutput;
+  // Stores action output result for [Backend Call - API (Resolve Promotion)] action in LoadSelectionPage widget.
+  ApiCallResponse? resolvePromotionOutput;
 
   /// Query cache managers for this widget.
 

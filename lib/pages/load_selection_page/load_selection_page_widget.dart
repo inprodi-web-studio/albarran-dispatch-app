@@ -33,6 +33,79 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  String _readText(
+    dynamic source,
+    String path, {
+    String fallback = '',
+  }) {
+    try {
+      final value = getJsonField(source, path);
+      final text = value?.toString().trim() ?? '';
+
+      if (text.isEmpty || text == 'null') {
+        return fallback;
+      }
+
+      return text;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  bool _readBool(
+    dynamic source,
+    String path, {
+    bool fallback = false,
+  }) {
+    try {
+      final value = getJsonField(source, path);
+
+      if (value is bool) {
+        return value;
+      }
+
+      final text = value?.toString().toLowerCase().trim();
+      if (text == 'true') {
+        return true;
+      }
+      if (text == 'false') {
+        return false;
+      }
+
+      return fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    final amount = double.tryParse(value?.toString() ?? '') ?? 0;
+
+    return NumberFormat.currency(
+      locale: 'en_US',
+      symbol: r'$',
+      decimalDigits: 2,
+    ).format(amount);
+  }
+
+  Future<ApiCallResponse?> _resolvePromotionForLoad({
+    required String quantity,
+  }) async {
+    final customerPayload = CustomerQrPayload.parse(widget.customerUuid);
+
+    if (!customerPayload.isValid) {
+      return null;
+    }
+
+    return PromotionsGroup.resolvePromotionCall.call(
+      token: currentAuthenticationToken,
+      customer: customerPayload.customerValueForLoad,
+      vehicle: customerPayload.vehicleUuid,
+      fleet: customerPayload.fleetUuid,
+      quantity: quantity,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -188,6 +261,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                               _model.apiRequestLastUniqueKey,
                             );
                             _model.apiRequestCompleted = false;
+                            _model.selectedBomb = null;
+                            _model.resolvePromotionOutput = null;
                           });
                           await _model.waitForApiRequestCompleted();
                         },
@@ -222,7 +297,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                               children: [
                                 Text(
                                   'Selecciona una Carga',
-                                  style: FlutterFlowTheme.of(context).bodyMedium
+                                  style: FlutterFlowTheme.of(context)
+                                      .bodyMedium
                                       .override(
                                         font: GoogleFonts.poppins(
                                           fontWeight: FontWeight.w500,
@@ -243,7 +319,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                 ),
                                 Text(
                                   'A continuación te mostramos la última carga de las bombas en las que estás despachando. Selecciona la carga a la que se relacionará al descuento del cliente.',
-                                  style: FlutterFlowTheme.of(context).bodyMedium
+                                  style: FlutterFlowTheme.of(context)
+                                      .bodyMedium
                                       .override(
                                         font: GoogleFonts.poppins(
                                           fontWeight: FontWeight.w300,
@@ -300,8 +377,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                     fontWeight: FontWeight.w500,
                                                     fontStyle:
                                                         FlutterFlowTheme.of(
-                                                          context,
-                                                        ).bodyMedium.fontStyle,
+                                                      context,
+                                                    ).bodyMedium.fontStyle,
                                                   ),
                                                   color: FlutterFlowTheme.of(
                                                     context,
@@ -311,52 +388,53 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                   fontWeight: FontWeight.w500,
                                                   fontStyle:
                                                       FlutterFlowTheme.of(
-                                                        context,
-                                                      ).bodyMedium.fontStyle,
+                                                    context,
+                                                  ).bodyMedium.fontStyle,
                                                 ),
                                           ),
                                           FutureBuilder<ApiCallResponse>(
                                             future: _model
                                                 .load(
-                                                  uniqueQueryKey: bombItem
-                                                      .toString(),
-                                                  requestFn: () => LoadsGroup
-                                                      .findLastLoadCall
-                                                      .call(
-                                                        token:
-                                                            currentAuthenticationToken,
-                                                        bombId: bombItem,
-                                                      ),
-                                                )
+                                              uniqueQueryKey:
+                                                  bombItem.toString(),
+                                              requestFn: () => LoadsGroup
+                                                  .findLastLoadCall
+                                                  .call(
+                                                token:
+                                                    currentAuthenticationToken,
+                                                bombId: bombItem,
+                                              ),
+                                            )
                                                 .then((result) {
-                                                  try {
-                                                    _model.apiRequestCompleted =
-                                                        true;
-                                                    _model.apiRequestLastUniqueKey =
-                                                        bombItem.toString();
-                                                  } finally {}
-                                                  return result;
-                                                }),
+                                              try {
+                                                _model.apiRequestCompleted =
+                                                    true;
+                                                _model.apiRequestLastUniqueKey =
+                                                    bombItem.toString();
+                                              } finally {}
+                                              return result;
+                                            }),
                                             builder: (context, snapshot) {
                                               // Customize what your widget looks like when it's loading.
                                               if (!snapshot.hasData) {
                                                 return Center(
                                                   child: Padding(
                                                     padding:
-                                                        EdgeInsetsDirectional.fromSTEB(
-                                                          0.0,
-                                                          30.0,
-                                                          0.0,
-                                                          30.0,
-                                                        ),
+                                                        EdgeInsetsDirectional
+                                                            .fromSTEB(
+                                                      0.0,
+                                                      30.0,
+                                                      0.0,
+                                                      30.0,
+                                                    ),
                                                     child: SizedBox(
                                                       width: 30.0,
                                                       height: 30.0,
                                                       child: SpinKitDualRing(
                                                         color:
                                                             FlutterFlowTheme.of(
-                                                              context,
-                                                            ).primaryBackground,
+                                                          context,
+                                                        ).primaryBackground,
                                                         size: 30.0,
                                                       ),
                                                     ),
@@ -381,6 +459,19 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                       null) {
                                                     _model.selectedBomb =
                                                         bombItem;
+                                                    _model.resolvePromotionOutput =
+                                                        null;
+                                                    safeSetState(() {});
+
+                                                    _model.resolvePromotionOutput =
+                                                        await _resolvePromotionForLoad(
+                                                      quantity: getJsonField(
+                                                        containerFindLastLoadResponse
+                                                            .jsonBody,
+                                                        r'''$.can''',
+                                                      ).toString(),
+                                                    );
+
                                                     safeSetState(() {});
                                                     return;
                                                   } else {
@@ -392,33 +483,33 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                   decoration: BoxDecoration(
                                                     color:
                                                         valueOrDefault<Color>(
-                                                          _model.selectedBomb ==
-                                                                  bombItem
-                                                              ? Color(
-                                                                  0x4C0197F6,
-                                                                )
-                                                              : Color(
-                                                                  0x27FFFFFF,
-                                                                ),
-                                                          Color(0x25FFFFFF),
-                                                        ),
+                                                      _model.selectedBomb ==
+                                                              bombItem
+                                                          ? Color(
+                                                              0x4C0197F6,
+                                                            )
+                                                          : Color(
+                                                              0x27FFFFFF,
+                                                            ),
+                                                      Color(0x25FFFFFF),
+                                                    ),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          6.0,
-                                                        ),
+                                                      6.0,
+                                                    ),
                                                     border: Border.all(
                                                       color:
                                                           valueOrDefault<Color>(
-                                                            _model.selectedBomb ==
-                                                                    bombItem
-                                                                ? Color(
-                                                                    0x800197F6,
-                                                                  )
-                                                                : Color(
-                                                                    0x27FFFFFF,
-                                                                  ),
-                                                            Color(0x25FFFFFF),
-                                                          ),
+                                                        _model.selectedBomb ==
+                                                                bombItem
+                                                            ? Color(
+                                                                0x800197F6,
+                                                              )
+                                                            : Color(
+                                                                0x27FFFFFF,
+                                                              ),
+                                                        Color(0x25FFFFFF),
+                                                      ),
                                                       width: 1.0,
                                                     ),
                                                   ),
@@ -435,8 +526,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                         Padding(
                                                           padding:
                                                               EdgeInsets.all(
-                                                                10.0,
-                                                              ),
+                                                            10.0,
+                                                          ),
                                                           child: Column(
                                                             mainAxisSize:
                                                                 MainAxisSize
@@ -444,324 +535,413 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
                                                                     .start,
-                                                            children:
-                                                                [
-                                                                  Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .max,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceBetween,
-                                                                    children: [
-                                                                      Text(
-                                                                        'Hora de Carga:',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                            children: [
+                                                              Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .max,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Hora de Carga:',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontWeight,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontWeight,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                      Text(
-                                                                        getJsonField(
-                                                                          containerFindLastLoadResponse
-                                                                              .jsonBody,
-                                                                          r'''$.converted_time''',
-                                                                        ).toString(),
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                            ).bodyMedium.fontWeight,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FontWeight.w600,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FontWeight.w600,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                    ],
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontWeight,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
                                                                   ),
-                                                                  Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .max,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceBetween,
-                                                                    children: [
-                                                                      Text(
-                                                                        'Cantidad:',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                  Text(
+                                                                    getJsonField(
+                                                                      containerFindLastLoadResponse
+                                                                          .jsonBody,
+                                                                      r'''$.converted_time''',
+                                                                    ).toString(),
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontWeight,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontWeight,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                      Text(
-                                                                        '${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.can''').toString())?.toStringAsFixed(2)} Litros',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
-                                                                              context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FontWeight.w600,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FontWeight.w600,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                    ],
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
                                                                   ),
-                                                                  Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .max,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceBetween,
-                                                                    children: [
-                                                                      Text(
-                                                                        'Precio:',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                ],
+                                                              ),
+                                                              Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .max,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Cantidad:',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontWeight,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontWeight,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                      Text(
-                                                                        '\$${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.pre''').toString())?.toStringAsFixed(2)}',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                            ).bodyMedium.fontWeight,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FontWeight.w600,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FontWeight.w600,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                    ],
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontWeight,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
                                                                   ),
-                                                                  Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .max,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceBetween,
-                                                                    children: [
-                                                                      Text(
-                                                                        'Gasolina:',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                  Text(
+                                                                    '${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.can''').toString())?.toStringAsFixed(2)} Litros',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontWeight,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontWeight,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                      Text(
-                                                                        '1' ==
-                                                                                getJsonField(
-                                                                                  containerFindLastLoadResponse.jsonBody,
-                                                                                  r'''$.codprd''',
-                                                                                ).toString()
-                                                                            ? 'Premium'
-                                                                            : 'Regular',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .max,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Precio:',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FontWeight.w600,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FontWeight.w600,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                  StyledDivider(
-                                                                    thickness:
-                                                                        1.0,
-                                                                    color: Color(
-                                                                      0x3FFFFFFF,
-                                                                    ),
-                                                                    lineStyle:
-                                                                        DividerLineStyle
-                                                                            .dashed,
-                                                                  ),
-                                                                  Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .max,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceBetween,
-                                                                    children: [
-                                                                      Text(
-                                                                        'Importe:',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                            ).bodyMedium.fontWeight,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontWeight,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontWeight,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                      Text(
-                                                                        '\$${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.mto''').toString())?.toStringAsFixed(2)}',
-                                                                        style:
-                                                                            FlutterFlowTheme.of(
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontWeight,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
+                                                                  ),
+                                                                  Text(
+                                                                    '\$${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.pre''').toString())?.toStringAsFixed(2)}',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
                                                                               context,
-                                                                            ).bodyMedium.override(
-                                                                              font: GoogleFonts.poppins(
-                                                                                fontWeight: FontWeight.w600,
-                                                                                fontStyle: FlutterFlowTheme.of(
-                                                                                  context,
-                                                                                ).bodyMedium.fontStyle,
-                                                                              ),
-                                                                              color: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).primaryBackground,
-                                                                              fontSize: 20.0,
-                                                                              letterSpacing: 0.0,
-                                                                              fontWeight: FontWeight.w600,
-                                                                              fontStyle: FlutterFlowTheme.of(
-                                                                                context,
-                                                                              ).bodyMedium.fontStyle,
-                                                                            ),
-                                                                      ),
-                                                                    ],
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
                                                                   ),
-                                                                ].divide(
-                                                                  SizedBox(
-                                                                    height: 8.0,
+                                                                ],
+                                                              ),
+                                                              Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .max,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Gasolina:',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontWeight,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontWeight,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
                                                                   ),
+                                                                  Text(
+                                                                    '1' ==
+                                                                            getJsonField(
+                                                                              containerFindLastLoadResponse.jsonBody,
+                                                                              r'''$.codprd''',
+                                                                            ).toString()
+                                                                        ? 'Premium'
+                                                                        : 'Regular',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              StyledDivider(
+                                                                thickness: 1.0,
+                                                                color: Color(
+                                                                  0x3FFFFFFF,
                                                                 ),
+                                                                lineStyle:
+                                                                    DividerLineStyle
+                                                                        .dashed,
+                                                              ),
+                                                              Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .max,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Importe:',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontWeight,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontWeight,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
+                                                                  ),
+                                                                  Text(
+                                                                    '\$${num.tryParse(getJsonField(containerFindLastLoadResponse.jsonBody, r'''$.mto''').toString())?.toStringAsFixed(2)}',
+                                                                    style: FlutterFlowTheme
+                                                                            .of(
+                                                                      context,
+                                                                    )
+                                                                        .bodyMedium
+                                                                        .override(
+                                                                          font:
+                                                                              GoogleFonts.poppins(
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                            fontStyle:
+                                                                                FlutterFlowTheme.of(
+                                                                              context,
+                                                                            ).bodyMedium.fontStyle,
+                                                                          ),
+                                                                          color:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).primaryBackground,
+                                                                          fontSize:
+                                                                              20.0,
+                                                                          letterSpacing:
+                                                                              0.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontStyle:
+                                                                              FlutterFlowTheme.of(
+                                                                            context,
+                                                                          ).bodyMedium.fontStyle,
+                                                                        ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ].divide(
+                                                              SizedBox(
+                                                                height: 8.0,
+                                                              ),
+                                                            ),
                                                           ),
                                                         ),
                                                       if (getJsonField(
@@ -773,8 +953,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                         Padding(
                                                           padding:
                                                               EdgeInsets.all(
-                                                                10.0,
-                                                              ),
+                                                            10.0,
+                                                          ),
                                                           child: Column(
                                                             mainAxisSize:
                                                                 MainAxisSize
@@ -785,49 +965,61 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
                                                                     .stretch,
-                                                            children:
-                                                                [
-                                                                  Icon(
-                                                                    Icons
-                                                                        .local_gas_station,
-                                                                    color: FlutterFlowTheme.of(
-                                                                      context,
-                                                                    ).primaryBackground,
-                                                                    size: 24.0,
-                                                                  ),
-                                                                  Text(
-                                                                    'Sin Cargas Disponibles',
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                    style: FlutterFlowTheme.of(context).bodyMedium.override(
-                                                                      font: GoogleFonts.poppins(
-                                                                        fontWeight: FlutterFlowTheme.of(
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .local_gas_station,
+                                                                color:
+                                                                    FlutterFlowTheme
+                                                                        .of(
+                                                                  context,
+                                                                ).primaryBackground,
+                                                                size: 24.0,
+                                                              ),
+                                                              Text(
+                                                                'Sin Cargas Disponibles',
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                                style: FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .bodyMedium
+                                                                    .override(
+                                                                      font: GoogleFonts
+                                                                          .poppins(
+                                                                        fontWeight:
+                                                                            FlutterFlowTheme.of(
                                                                           context,
                                                                         ).bodyMedium.fontWeight,
-                                                                        fontStyle: FlutterFlowTheme.of(
+                                                                        fontStyle:
+                                                                            FlutterFlowTheme.of(
                                                                           context,
                                                                         ).bodyMedium.fontStyle,
                                                                       ),
-                                                                      color: FlutterFlowTheme.of(
+                                                                      color:
+                                                                          FlutterFlowTheme
+                                                                              .of(
                                                                         context,
                                                                       ).primaryBackground,
                                                                       letterSpacing:
                                                                           0.0,
-                                                                      fontWeight: FlutterFlowTheme.of(
+                                                                      fontWeight:
+                                                                          FlutterFlowTheme
+                                                                              .of(
                                                                         context,
                                                                       ).bodyMedium.fontWeight,
-                                                                      fontStyle: FlutterFlowTheme.of(
+                                                                      fontStyle:
+                                                                          FlutterFlowTheme
+                                                                              .of(
                                                                         context,
                                                                       ).bodyMedium.fontStyle,
                                                                     ),
-                                                                  ),
-                                                                ].divide(
-                                                                  SizedBox(
-                                                                    height:
-                                                                        10.0,
-                                                                  ),
-                                                                ),
+                                                              ),
+                                                            ].divide(
+                                                              SizedBox(
+                                                                height: 10.0,
+                                                              ),
+                                                            ),
                                                           ),
                                                         ),
                                                     ],
@@ -843,6 +1035,377 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                 },
                               ),
                             ),
+                            if (_model.selectedBomb != null)
+                              Builder(
+                                builder: (context) {
+                                  final promotionResponse =
+                                      _model.resolvePromotionOutput;
+                                  final promotionApplies =
+                                      promotionResponse != null &&
+                                          (promotionResponse.succeeded) &&
+                                          _readBool(
+                                            promotionResponse.jsonBody,
+                                            r'''$.applies''',
+                                          );
+                                  final promotionTitle = promotionApplies
+                                      ? _readText(
+                                          promotionResponse.jsonBody,
+                                          r'''$.promotion.title''',
+                                          fallback: 'Promoción activa',
+                                        )
+                                      : '';
+                                  final promotionDescription = promotionApplies
+                                      ? _readText(
+                                          promotionResponse.jsonBody,
+                                          r'''$.promotion.description''',
+                                          fallback:
+                                              'Esta promoción se aplicará en la carga seleccionada.',
+                                        )
+                                      : '';
+                                  final estimatedDiscount = promotionApplies
+                                      ? _formatCurrency(
+                                          getJsonField(
+                                            promotionResponse.jsonBody,
+                                            r'''$.promotion.rewardSummary.estimatedDiscount''',
+                                          ),
+                                        )
+                                      : r'$0.00';
+                                  final perLiterDiscount = promotionApplies
+                                      ? _formatCurrency(
+                                          getJsonField(
+                                            promotionResponse.jsonBody,
+                                            r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
+                                          ),
+                                        )
+                                      : r'$0.00';
+
+                                  return Container(
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Color(0x27FFFFFF),
+                                      borderRadius: BorderRadius.circular(6.0),
+                                      border: Border.all(
+                                        color: Color(0x27FFFFFF),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Promoción aplicable',
+                                            style: FlutterFlowTheme.of(context)
+                                                .bodyMedium
+                                                .override(
+                                                  font: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontStyle:
+                                                        FlutterFlowTheme.of(
+                                                      context,
+                                                    ).bodyMedium.fontStyle,
+                                                  ),
+                                                  color: FlutterFlowTheme.of(
+                                                    context,
+                                                  ).primaryBackground,
+                                                  letterSpacing: 0.0,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontStyle:
+                                                      FlutterFlowTheme.of(
+                                                    context,
+                                                  ).bodyMedium.fontStyle,
+                                                ),
+                                          ),
+                                          if (promotionResponse == null)
+                                            Padding(
+                                              padding: EdgeInsetsDirectional
+                                                  .fromSTEB(0.0, 8.0, 0.0, 0.0),
+                                              child: Row(
+                                                children: [
+                                                  SizedBox(
+                                                    width: 16.0,
+                                                    height: 16.0,
+                                                    child: SpinKitDualRing(
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                        context,
+                                                      ).primaryBackground,
+                                                      size: 16.0,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsetsDirectional
+                                                              .fromSTEB(
+                                                                  8.0,
+                                                                  0.0,
+                                                                  0.0,
+                                                                  0.0),
+                                                      child: Text(
+                                                        'Consultando promoción para esta carga...',
+                                                        style:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .bodyMedium
+                                                                .override(
+                                                                  font: GoogleFonts
+                                                                      .poppins(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w400,
+                                                                    fontStyle: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .bodyMedium
+                                                                        .fontStyle,
+                                                                  ),
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .primaryBackground,
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodyMedium
+                                                                      .fontStyle,
+                                                                ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          if (promotionResponse != null &&
+                                              !promotionResponse.succeeded)
+                                            Padding(
+                                              padding: EdgeInsetsDirectional
+                                                  .fromSTEB(0.0, 8.0, 0.0, 0.0),
+                                              child: Text(
+                                                'No se pudo validar la promoción en este momento.',
+                                                style: FlutterFlowTheme.of(
+                                                        context)
+                                                    .bodyMedium
+                                                    .override(
+                                                      font: GoogleFonts.poppins(
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        fontStyle:
+                                                            FlutterFlowTheme.of(
+                                                          context,
+                                                        ).bodyMedium.fontStyle,
+                                                      ),
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                        context,
+                                                      ).secondaryBackground,
+                                                      letterSpacing: 0.0,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      fontStyle:
+                                                          FlutterFlowTheme.of(
+                                                        context,
+                                                      ).bodyMedium.fontStyle,
+                                                    ),
+                                              ),
+                                            ),
+                                          if (promotionResponse != null &&
+                                              promotionResponse.succeeded &&
+                                              !promotionApplies)
+                                            Padding(
+                                              padding: EdgeInsetsDirectional
+                                                  .fromSTEB(0.0, 8.0, 0.0, 0.0),
+                                              child: Text(
+                                                'No hay promoción activa para esta carga.',
+                                                style: FlutterFlowTheme.of(
+                                                        context)
+                                                    .bodyMedium
+                                                    .override(
+                                                      font: GoogleFonts.poppins(
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        fontStyle:
+                                                            FlutterFlowTheme.of(
+                                                          context,
+                                                        ).bodyMedium.fontStyle,
+                                                      ),
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                        context,
+                                                      ).primaryBackground,
+                                                      letterSpacing: 0.0,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      fontStyle:
+                                                          FlutterFlowTheme.of(
+                                                        context,
+                                                      ).bodyMedium.fontStyle,
+                                                    ),
+                                              ),
+                                            ),
+                                          if (promotionApplies)
+                                            Padding(
+                                              padding: EdgeInsetsDirectional
+                                                  .fromSTEB(0.0, 8.0, 0.0, 0.0),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    promotionTitle,
+                                                    style: FlutterFlowTheme.of(
+                                                            context)
+                                                        .bodyMedium
+                                                        .override(
+                                                          font: GoogleFonts
+                                                              .poppins(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontStyle:
+                                                                FlutterFlowTheme
+                                                                        .of(
+                                                              context,
+                                                            )
+                                                                    .bodyMedium
+                                                                    .fontStyle,
+                                                          ),
+                                                          color:
+                                                              FlutterFlowTheme
+                                                                  .of(
+                                                            context,
+                                                          ).primaryBackground,
+                                                          letterSpacing: 0.0,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontStyle:
+                                                              FlutterFlowTheme
+                                                                      .of(
+                                                            context,
+                                                          )
+                                                                  .bodyMedium
+                                                                  .fontStyle,
+                                                        ),
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                        EdgeInsetsDirectional
+                                                            .fromSTEB(0.0, 2.0,
+                                                                0.0, 8.0),
+                                                    child: Text(
+                                                      promotionDescription,
+                                                      style:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .bodyMedium
+                                                              .override(
+                                                                font: GoogleFonts
+                                                                    .poppins(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodyMedium
+                                                                      .fontStyle,
+                                                                ),
+                                                                color: FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .primaryBackground,
+                                                                letterSpacing:
+                                                                    0.0,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w400,
+                                                                fontStyle: FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .bodyMedium
+                                                                    .fontStyle,
+                                                              ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Descuento estimado: $estimatedDiscount',
+                                                    style: FlutterFlowTheme.of(
+                                                            context)
+                                                        .bodyMedium
+                                                        .override(
+                                                          font: GoogleFonts
+                                                              .poppins(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontStyle:
+                                                                FlutterFlowTheme
+                                                                        .of(
+                                                              context,
+                                                            )
+                                                                    .bodyMedium
+                                                                    .fontStyle,
+                                                          ),
+                                                          color:
+                                                              FlutterFlowTheme
+                                                                  .of(
+                                                            context,
+                                                          ).primaryBackground,
+                                                          letterSpacing: 0.0,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontStyle:
+                                                              FlutterFlowTheme
+                                                                      .of(
+                                                            context,
+                                                          )
+                                                                  .bodyMedium
+                                                                  .fontStyle,
+                                                        ),
+                                                  ),
+                                                  Text(
+                                                    'Descuento por litro: $perLiterDiscount',
+                                                    style: FlutterFlowTheme.of(
+                                                            context)
+                                                        .bodyMedium
+                                                        .override(
+                                                          font: GoogleFonts
+                                                              .poppins(
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                            fontStyle:
+                                                                FlutterFlowTheme
+                                                                        .of(
+                                                              context,
+                                                            )
+                                                                    .bodyMedium
+                                                                    .fontStyle,
+                                                          ),
+                                                          color:
+                                                              FlutterFlowTheme
+                                                                  .of(
+                                                            context,
+                                                          ).primaryBackground,
+                                                          letterSpacing: 0.0,
+                                                          fontWeight:
+                                                              FontWeight.w400,
+                                                          fontStyle:
+                                                              FlutterFlowTheme
+                                                                      .of(
+                                                            context,
+                                                          )
+                                                                  .bodyMedium
+                                                                  .fontStyle,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),
@@ -859,71 +1422,154 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                           ),
                           child: FFButtonWidget(
                             onPressed: () async {
-                              var _shouldSetState = false;
-                              var confirmDialogResponse =
-                                  await showDialog<bool>(
-                                    context: context,
-                                    builder: (alertDialogContext) {
-                                      return AlertDialog(
-                                        title: Text('Asignar Despacho'),
-                                        content: Text(
-                                          'Al aceptar se asignará el despacho al ciente y se aplicarán los descuentos correspondientes. Esta acción no será reversible.',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(
-                                              alertDialogContext,
-                                              false,
-                                            ),
-                                            child: Text('Cancelar'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(
-                                              alertDialogContext,
-                                              true,
-                                            ),
-                                            child: Text('Confirmar'),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ) ??
-                                  false;
-                              if (confirmDialogResponse) {
-                                _model.bombOutput = await LoadsGroup
-                                    .findLastLoadCall
-                                    .call(
-                                      token: currentAuthenticationToken,
-                                      bombId: _model.selectedBomb,
-                                    );
+                              _model.bombOutput =
+                                  await LoadsGroup.findLastLoadCall.call(
+                                token: currentAuthenticationToken,
+                                bombId: _model.selectedBomb,
+                              );
 
-                                _shouldSetState = true;
-
-                                context.goNamed(
-                                  WIPPageWidget.routeName,
-                                  queryParameters: {
-                                    'bomb': serializeParam(
-                                      getJsonField(
+                              if (!(_model.bombOutput?.succeeded ?? false) ||
+                                  getJsonField(
                                         (_model.bombOutput?.jsonBody ?? ''),
-                                        r'''$''',
+                                        r'''$.can''',
+                                      ) ==
+                                      null) {
+                                await showDialog(
+                                  context: context,
+                                  builder: (alertDialogContext) {
+                                    return AlertDialog(
+                                      title: Text('Carga no disponible'),
+                                      content: Text(
+                                        'No se pudo obtener una carga válida de la bomba seleccionada.',
                                       ),
-                                      ParamType.JSON,
-                                    ),
-                                    'customerUuid': serializeParam(
-                                      widget.customerUuid,
-                                      ParamType.String,
-                                    ),
-                                  }.withoutNulls,
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(
+                                            alertDialogContext,
+                                          ),
+                                          child: Text('Aceptar'),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 );
 
-                                if (_shouldSetState) safeSetState(() {});
-                                return;
-                              } else {
-                                if (_shouldSetState) safeSetState(() {});
+                                safeSetState(() {});
                                 return;
                               }
 
-                              if (_shouldSetState) safeSetState(() {});
+                              _model.resolvePromotionOutput =
+                                  await _resolvePromotionForLoad(
+                                quantity: getJsonField(
+                                  (_model.bombOutput?.jsonBody ?? ''),
+                                  r'''$.can''',
+                                ).toString(),
+                              );
+
+                              if (!(_model.resolvePromotionOutput?.succeeded ??
+                                  false)) {
+                                await showDialog(
+                                  context: context,
+                                  builder: (alertDialogContext) {
+                                    return AlertDialog(
+                                      title: Text('Promoción no disponible'),
+                                      content: Text(
+                                        'No se pudo determinar la promoción aplicable para esta carga. Intenta nuevamente.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(
+                                            alertDialogContext,
+                                          ),
+                                          child: Text('Aceptar'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+
+                                safeSetState(() {});
+                                return;
+                              }
+
+                              final promotionApplies = _readBool(
+                                _model.resolvePromotionOutput?.jsonBody,
+                                r'''$.applies''',
+                              );
+                              final promotionTitle = _readText(
+                                _model.resolvePromotionOutput?.jsonBody,
+                                r'''$.promotion.title''',
+                              );
+                              final estimatedDiscount = _formatCurrency(
+                                getJsonField(
+                                  _model.resolvePromotionOutput?.jsonBody,
+                                  r'''$.promotion.rewardSummary.estimatedDiscount''',
+                                ),
+                              );
+                              final perLiterDiscount = _formatCurrency(
+                                getJsonField(
+                                  _model.resolvePromotionOutput?.jsonBody,
+                                  r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
+                                ),
+                              );
+
+                              final promotionMessage = promotionApplies
+                                  ? 'Promoción aplicable: $promotionTitle\nDescuento estimado: $estimatedDiscount\nDescuento por litro: $perLiterDiscount'
+                                  : 'No hay promoción activa para esta carga.';
+
+                              final confirmDialogResponse =
+                                  await showDialog<bool>(
+                                        context: context,
+                                        builder: (alertDialogContext) {
+                                          return AlertDialog(
+                                            title: Text('Asignar Despacho'),
+                                            content: Text(
+                                              '$promotionMessage\n\nAl aceptar se asignará el despacho al cliente y se aplicará esta misma evaluación de promoción en servidor. Esta acción no será reversible.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  alertDialogContext,
+                                                  false,
+                                                ),
+                                                child: Text('Cancelar'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  alertDialogContext,
+                                                  true,
+                                                ),
+                                                child: Text('Confirmar'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ) ??
+                                      false;
+
+                              if (!confirmDialogResponse) {
+                                safeSetState(() {});
+                                return;
+                              }
+
+                              context.goNamed(
+                                WIPPageWidget.routeName,
+                                queryParameters: {
+                                  'bomb': serializeParam(
+                                    getJsonField(
+                                      (_model.bombOutput?.jsonBody ?? ''),
+                                      r'''$''',
+                                    ),
+                                    ParamType.JSON,
+                                  ),
+                                  'customerUuid': serializeParam(
+                                    widget.customerUuid,
+                                    ParamType.String,
+                                  ),
+                                }.withoutNulls,
+                              );
+
+                              safeSetState(() {});
                             },
                             text: 'Seleccionar Carga',
                             icon: Icon(Icons.check, size: 20.0),
@@ -942,7 +1588,8 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                 0.0,
                               ),
                               color: FlutterFlowTheme.of(context).tertiary,
-                              textStyle: FlutterFlowTheme.of(context).titleSmall
+                              textStyle: FlutterFlowTheme.of(context)
+                                  .titleSmall
                                   .override(
                                     font: GoogleFonts.poppins(
                                       fontWeight: FlutterFlowTheme.of(
