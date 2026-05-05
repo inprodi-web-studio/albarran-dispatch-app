@@ -1,4 +1,4 @@
-package com.inprodi.albarranMember
+package com.inprodi.albarranDispatch
 
 import io.flutter.embedding.android.FlutterActivity
 

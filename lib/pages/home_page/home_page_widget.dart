@@ -167,7 +167,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                     await FlutterBarcodeScanner.scanBarcode(
                                   '#C62828', // scanning line color
                                   'Cancelar', // cancel button text
-                                  true, // whether to show the flash icon
+                                  true, // whether to show the torch (camera LED) toggle icon
                                   ScanMode.QR,
                                 );
 
