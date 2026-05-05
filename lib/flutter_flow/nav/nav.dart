@@ -89,6 +89,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomePageWidget.routeName,
           path: HomePageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => HomePageWidget(),
         ),
         FFRoute(
@@ -99,11 +100,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: SelectBombPageWidget.routeName,
           path: SelectBombPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => SelectBombPageWidget(),
         ),
         FFRoute(
           name: LoadSelectionPageWidget.routeName,
           path: LoadSelectionPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => LoadSelectionPageWidget(
             customerUuid: params.getParam(
               'customerUuid',
@@ -114,6 +117,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: WIPPageWidget.routeName,
           path: WIPPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => WIPPageWidget(
             bomb: params.getParam(
               'bomb',
@@ -128,6 +132,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: SuccessPageWidget.routeName,
           path: SuccessPageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => SuccessPageWidget(
             discount: params.getParam(
               'discount',
