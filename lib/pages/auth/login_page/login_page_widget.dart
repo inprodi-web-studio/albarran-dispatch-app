@@ -633,6 +633,9 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                           AuthGroup.loginCall.token(
                                         (_model.loginOutput?.jsonBody ?? ''),
                                       ),
+                                      authUid: AuthGroup.loginCall.uuid(
+                                        (_model.loginOutput?.jsonBody ?? ''),
+                                      ),
                                       userData: UserStruct.maybeFromMap(
                                           (_model.loginOutput?.jsonBody ?? '')),
                                     );

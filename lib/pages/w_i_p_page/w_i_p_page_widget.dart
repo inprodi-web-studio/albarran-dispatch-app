@@ -4,8 +4,10 @@ import '/flutter_flow/customer_qr_payload.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'w_i_p_page_model.dart';
@@ -32,6 +34,38 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
   late WIPPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  String _buildAssignLoadLog({
+    required String customerForLoad,
+    required String? vehicleUuid,
+    required String? fleetUuid,
+    required String product,
+    required String quantity,
+    required String price,
+    required String total,
+    required String date,
+    ApiCallResponse? response,
+  }) {
+    final lines = <String>[
+      '[assignLoad] request',
+      'customer: $customerForLoad',
+      'vehicle: ${vehicleUuid ?? "null"}',
+      'fleet: ${fleetUuid ?? "null"}',
+      'product: $product',
+      'quantity: $quantity',
+      'price: $price',
+      'total: $total',
+      'date: $date',
+      '',
+      '[assignLoad] response',
+      'status: ${response?.statusCode ?? "null"}',
+      'succeeded: ${response?.succeeded ?? false}',
+      'body: ${response?.bodyText ?? "(sin body)"}',
+      'exception: ${response?.exceptionMessage ?? "(sin exception)"}',
+    ];
+
+    return lines.join('\n');
+  }
 
   @override
   void initState() {
@@ -66,35 +100,93 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
         return;
       }
 
+      final requestProduct =
+          '2' == getJsonField(widget.bomb, r'''$.codprd''').toString()
+              ? 'magna'
+              : 'premium';
+      final requestQuantity =
+          (getJsonField(widget.bomb, r'''$.can''').floor()).toString();
+      final requestPrice = getJsonField(widget.bomb, r'''$.pre''').toString();
+      final requestTotal = getJsonField(widget.bomb, r'''$.mto''').toString();
+      final requestDate =
+          getJsonField(widget.bomb, r'''$.datetime_combined''').toString();
+
       _model.assignOutput = await LoadsGroup.assignLoadCall.call(
         customer: customerPayload.customerValueForLoad,
         vehicle: customerPayload.vehicleUuid,
         fleet: customerPayload.fleetUuid,
         token: currentAuthenticationToken,
-        product: '2' == getJsonField(widget.bomb, r'''$.codprd''').toString()
-            ? 'magna'
-            : 'premium',
-        quantity: (getJsonField(widget.bomb, r'''$.can''').floor()).toString(),
-        price: getJsonField(widget.bomb, r'''$.pre''').toString(),
-        total: getJsonField(widget.bomb, r'''$.mto''').toString(),
-        date: getJsonField(widget.bomb, r'''$.datetime_combined''').toString(),
+        product: requestProduct,
+        quantity: requestQuantity,
+        price: requestPrice,
+        total: requestTotal,
+        date: requestDate,
       );
 
-      if ((_model.assignOutput?.succeeded ?? true)) {
+      final assignLog = _buildAssignLoadLog(
+        customerForLoad: customerPayload.customerValueForLoad,
+        vehicleUuid: customerPayload.vehicleUuid,
+        fleetUuid: customerPayload.fleetUuid,
+        product: requestProduct,
+        quantity: requestQuantity,
+        price: requestPrice,
+        total: requestTotal,
+        date: requestDate,
+        response: _model.assignOutput,
+      );
+      debugPrint(assignLog);
+
+      if ((_model.assignOutput?.succeeded ?? false)) {
+        final quantity = double.tryParse(
+              getJsonField(
+                (_model.assignOutput?.jsonBody ?? ''),
+                r'''$.quantity''',
+              ).toString(),
+            ) ??
+            0;
+        final discountPerLiter = double.tryParse(
+              getJsonField(
+                (_model.assignOutput?.jsonBody ?? ''),
+                r'''$.discount''',
+              ).toString(),
+            ) ??
+            0;
+        final total = double.tryParse(
+              getJsonField(
+                (_model.assignOutput?.jsonBody ?? ''),
+                r'''$.total''',
+              ).toString(),
+            ) ??
+            0;
+        final price = double.tryParse(
+              getJsonField(
+                (_model.assignOutput?.jsonBody ?? ''),
+                r'''$.price''',
+              ).toString(),
+            ) ??
+            0;
+        final subtotal = quantity * price;
+        final discountTotal = quantity * discountPerLiter;
+        final expectedNetTotal =
+            (subtotal - discountTotal).clamp(0, double.infinity);
+        final totalToCharge =
+            (total > expectedNetTotal + 0.009 && discountTotal > 0)
+                ? (total - discountTotal).clamp(0, double.infinity)
+                : (total > 0 ? total : expectedNetTotal);
+
         context.goNamed(
           SuccessPageWidget.routeName,
           queryParameters: {
             'discount': serializeParam(
               valueOrDefault<String>(
-                (getJsonField(
-                          (_model.assignOutput?.jsonBody ?? ''),
-                          r'''$.quantity''',
-                        ) *
-                        getJsonField(
-                          (_model.assignOutput?.jsonBody ?? ''),
-                          r'''$.discount''',
-                        ))
-                    .toStringAsFixed(2),
+                discountTotal.toStringAsFixed(2),
+                '0',
+              ),
+              ParamType.String,
+            ),
+            'totalToCharge': serializeParam(
+              valueOrDefault<String>(
+                totalToCharge.toStringAsFixed(2),
                 '0',
               ),
               ParamType.String,
@@ -109,10 +201,52 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
           builder: (alertDialogContext) {
             return AlertDialog(
               title: Text('Error de Servidor'),
-              content: Text(
-                'Ha ocurrido un error al asignar la carga al cliente.',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ha ocurrido un error al asignar la carga al cliente.',
+                    ),
+                    if (kDebugMode) ...[
+                      SizedBox(height: 10.0),
+                      SelectableText(
+                        assignLog,
+                        style: FlutterFlowTheme.of(alertDialogContext)
+                            .bodyMedium
+                            .override(
+                              font: GoogleFonts.robotoMono(
+                                fontWeight: FontWeight.w400,
+                                fontStyle: FlutterFlowTheme.of(
+                                  alertDialogContext,
+                                ).bodyMedium.fontStyle,
+                              ),
+                              fontSize: 11.0,
+                              letterSpacing: 0.0,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               actions: [
+                if (kDebugMode)
+                  TextButton(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: assignLog));
+                      if (!alertDialogContext.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(alertDialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text('Logs copiados'),
+                          duration: Duration(milliseconds: 1200),
+                        ),
+                      );
+                    },
+                    child: Text('Copiar logs'),
+                  ),
                 TextButton(
                   onPressed: () => Navigator.pop(alertDialogContext),
                   child: Text('Aceptar'),
@@ -171,21 +305,22 @@ class _WIPPageWidgetState extends State<WIPPageWidget> {
                     'Estamos trabajando en ello...\nEsto tomará sólo un par de segundos.',
                     textAlign: TextAlign.center,
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w300,
-                        fontStyle: FlutterFlowTheme.of(
-                          context,
-                        ).bodyMedium.fontStyle,
-                      ),
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
-                      fontSize: 14.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.w300,
-                      fontStyle: FlutterFlowTheme.of(
-                        context,
-                      ).bodyMedium.fontStyle,
-                      lineHeight: 1.5,
-                    ),
+                          font: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w300,
+                            fontStyle: FlutterFlowTheme.of(
+                              context,
+                            ).bodyMedium.fontStyle,
+                          ),
+                          color:
+                              FlutterFlowTheme.of(context).secondaryBackground,
+                          fontSize: 14.0,
+                          letterSpacing: 0.0,
+                          fontWeight: FontWeight.w300,
+                          fontStyle: FlutterFlowTheme.of(
+                            context,
+                          ).bodyMedium.fontStyle,
+                          lineHeight: 1.5,
+                        ),
                   ),
                 ],
               ),

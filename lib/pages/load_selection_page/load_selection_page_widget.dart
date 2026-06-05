@@ -88,6 +88,30 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
     ).format(amount);
   }
 
+  double _readNumber(
+    dynamic source,
+    String path, {
+    double fallback = 0,
+  }) {
+    try {
+      final value = getJsonField(source, path);
+
+      if (value is num) {
+        return value.toDouble();
+      }
+
+      final text = value?.toString().trim() ?? '';
+
+      if (text.isEmpty || text == 'null') {
+        return fallback;
+      }
+
+      return double.tryParse(text.replaceAll(',', '.')) ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   Future<ApiCallResponse?> _resolvePromotionForLoad({
     required String quantity,
   }) async {
@@ -1063,20 +1087,65 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                         )
                                       : '';
                                   final estimatedDiscount = promotionApplies
-                                      ? _formatCurrency(
-                                          getJsonField(
+                                      ? () {
+                                          final estimatedValue = _readNumber(
                                             promotionResponse.jsonBody,
                                             r'''$.promotion.rewardSummary.estimatedDiscount''',
-                                          ),
-                                        )
-                                      : r'$0.00';
-                                  final perLiterDiscount = promotionApplies
-                                      ? _formatCurrency(
-                                          getJsonField(
+                                          );
+                                          final effectivePerLiterValue =
+                                              _readNumber(
                                             promotionResponse.jsonBody,
                                             r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
-                                          ),
-                                        )
+                                          );
+                                          final discountPerLiterValue =
+                                              _readNumber(
+                                            promotionResponse.jsonBody,
+                                            r'''$.promotion.rewardSummary.discountPerLiter''',
+                                          );
+                                          final resolvedPerLiterValue =
+                                              effectivePerLiterValue > 0
+                                                  ? effectivePerLiterValue
+                                                  : discountPerLiterValue;
+                                          final quantityValue = _readNumber(
+                                            promotionResponse.jsonBody,
+                                            r'''$.quantity''',
+                                          );
+                                          final resolvedEstimatedValue =
+                                              estimatedValue > 0
+                                                  ? estimatedValue
+                                                  : (quantityValue > 0 &&
+                                                          resolvedPerLiterValue >
+                                                              0)
+                                                      ? resolvedPerLiterValue *
+                                                          quantityValue
+                                                      : 0;
+
+                                          return _formatCurrency(
+                                            resolvedEstimatedValue,
+                                          );
+                                        }()
+                                      : r'$0.00';
+                                  final perLiterDiscount = promotionApplies
+                                      ? () {
+                                          final effectivePerLiterValue =
+                                              _readNumber(
+                                            promotionResponse.jsonBody,
+                                            r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
+                                          );
+                                          final discountPerLiterValue =
+                                              _readNumber(
+                                            promotionResponse.jsonBody,
+                                            r'''$.promotion.rewardSummary.discountPerLiter''',
+                                          );
+                                          final resolvedPerLiterValue =
+                                              effectivePerLiterValue > 0
+                                                  ? effectivePerLiterValue
+                                                  : discountPerLiterValue;
+
+                                          return _formatCurrency(
+                                            resolvedPerLiterValue,
+                                          );
+                                        }()
                                       : r'$0.00';
 
                                   return Container(
@@ -1501,16 +1570,56 @@ class _LoadSelectionPageWidgetState extends State<LoadSelectionPageWidget> {
                                 r'''$.promotion.title''',
                               );
                               final estimatedDiscount = _formatCurrency(
-                                getJsonField(
-                                  _model.resolvePromotionOutput?.jsonBody,
-                                  r'''$.promotion.rewardSummary.estimatedDiscount''',
-                                ),
+                                () {
+                                  final estimatedValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.promotion.rewardSummary.estimatedDiscount''',
+                                  );
+                                  final effectivePerLiterValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
+                                  );
+                                  final discountPerLiterValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.promotion.rewardSummary.discountPerLiter''',
+                                  );
+                                  final resolvedPerLiterValue =
+                                      effectivePerLiterValue > 0
+                                          ? effectivePerLiterValue
+                                          : discountPerLiterValue;
+                                  final quantityValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.quantity''',
+                                  );
+
+                                  if (estimatedValue > 0) {
+                                    return estimatedValue;
+                                  }
+
+                                  if (quantityValue > 0 &&
+                                      resolvedPerLiterValue > 0) {
+                                    return resolvedPerLiterValue *
+                                        quantityValue;
+                                  }
+
+                                  return 0;
+                                }(),
                               );
                               final perLiterDiscount = _formatCurrency(
-                                getJsonField(
-                                  _model.resolvePromotionOutput?.jsonBody,
-                                  r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
-                                ),
+                                () {
+                                  final effectivePerLiterValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.promotion.rewardSummary.effectiveDiscountPerLiter''',
+                                  );
+                                  final discountPerLiterValue = _readNumber(
+                                    _model.resolvePromotionOutput?.jsonBody,
+                                    r'''$.promotion.rewardSummary.discountPerLiter''',
+                                  );
+
+                                  return effectivePerLiterValue > 0
+                                      ? effectivePerLiterValue
+                                      : discountPerLiterValue;
+                                }(),
                               );
 
                               final promotionMessage = promotionApplies

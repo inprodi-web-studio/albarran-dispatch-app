@@ -18,6 +18,7 @@ class AuthGroup {
   static LoginCall loginCall = LoginCall();
   static SelectBombsCall selectBombsCall = SelectBombsCall();
   static LogoutCall logoutCall = LogoutCall();
+  static LogoutWithReportCall logoutWithReportCall = LogoutWithReportCall();
 }
 
 class LoginCall {
@@ -128,6 +129,31 @@ class LogoutCall {
   }
 }
 
+class LogoutWithReportCall {
+  Future<ApiCallResponse> call({String? token = ''}) async {
+    final baseUrl = AuthGroup.getBaseUrl();
+
+    return ApiManager.instance.makeApiCall(
+      callName: 'Logout With Report',
+      apiUrl: '${baseUrl}/dispatcher/auth/logout/report',
+      callType: ApiCallType.POST,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+        'Authorization': 'Bearer ${token}',
+        'Accept': 'application/pdf',
+      },
+      params: {},
+      bodyType: BodyType.JSON,
+      returnBody: false,
+      encodeBodyUtf8: false,
+      decodeUtf8: false,
+      cache: false,
+      isStreamingApi: false,
+      alwaysAllowBody: false,
+    );
+  }
+}
+
 /// End Auth Group Code
 
 /// Start Bombs Group Code
@@ -200,6 +226,8 @@ class LoadsGroup {
   static Map<String, String> headers = {'Authorization': 'Bearer [token]'};
   static FindLastLoadCall findLastLoadCall = FindLastLoadCall();
   static AssignLoadCall assignLoadCall = AssignLoadCall();
+  static CurrentShiftReportCall currentShiftReportCall =
+      CurrentShiftReportCall();
 }
 
 class FindLastLoadCall {
@@ -258,6 +286,26 @@ class AssignLoadCall {
       params: {},
       body: ffApiRequestBody,
       bodyType: BodyType.JSON,
+      returnBody: true,
+      encodeBodyUtf8: false,
+      decodeUtf8: false,
+      cache: false,
+      isStreamingApi: false,
+      alwaysAllowBody: false,
+    );
+  }
+}
+
+class CurrentShiftReportCall {
+  Future<ApiCallResponse> call({String? token = ''}) async {
+    final baseUrl = LoadsGroup.getBaseUrl(token: token);
+
+    return ApiManager.instance.makeApiCall(
+      callName: 'Current Shift Report',
+      apiUrl: '${baseUrl}/dispatcher/loads/shift/current',
+      callType: ApiCallType.GET,
+      headers: {'Authorization': 'Bearer ${token}'},
+      params: {},
       returnBody: true,
       encodeBodyUtf8: false,
       decodeUtf8: false,

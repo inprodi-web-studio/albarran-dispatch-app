@@ -24,7 +24,7 @@ class CustomAuthManager {
   String? uid;
   UserStruct? userData;
 
-  Future signOut() async {
+  Future<void> signOut() async {
     authenticationToken = null;
     refreshToken = null;
     tokenExpiration = null;
@@ -34,7 +34,7 @@ class CustomAuthManager {
     albarranDespachoAuthUserSubject.add(
       AlbarranDespachoAuthUser(loggedIn: false),
     );
-    persistAuthData();
+    await persistAuthData();
   }
 
   Future<AlbarranDespachoAuthUser?> signIn({
@@ -43,14 +43,17 @@ class CustomAuthManager {
     DateTime? tokenExpiration,
     String? authUid,
     UserStruct? userData,
-  }) async =>
-      _updateCurrentUser(
-        authenticationToken: authenticationToken,
-        refreshToken: refreshToken,
-        tokenExpiration: tokenExpiration,
-        authUid: authUid,
-        userData: userData,
-      );
+  }) async {
+    final updatedUser = _updateCurrentUser(
+      authenticationToken: authenticationToken,
+      refreshToken: refreshToken,
+      tokenExpiration: tokenExpiration,
+      authUid: authUid,
+      userData: userData,
+    );
+    await persistAuthData();
+    return updatedUser;
+  }
 
   void updateAuthUserData({
     String? authenticationToken,
@@ -71,6 +74,7 @@ class CustomAuthManager {
       authUid: authUid,
       userData: userData,
     );
+    unawaited(persistAuthData());
   }
 
   AlbarranDespachoAuthUser? _updateCurrentUser({
@@ -102,7 +106,6 @@ class CustomAuthManager {
       userData: userData,
     );
     albarranDespachoAuthUserSubject.add(updatedUser);
-    persistAuthData();
     return updatedUser;
   }
 
@@ -139,7 +142,7 @@ class CustomAuthManager {
     final authTokenExists =
         authenticationToken != null && authenticationToken!.trim().isNotEmpty;
     final tokenExpired =
-        tokenExpiration == null || tokenExpiration!.isBefore(DateTime.now());
+        tokenExpiration != null && tokenExpiration!.isBefore(DateTime.now());
     final updatedUser = AlbarranDespachoAuthUser(
       loggedIn: authTokenExists && !tokenExpired,
       uid: uid,
@@ -148,22 +151,42 @@ class CustomAuthManager {
     albarranDespachoAuthUserSubject.add(updatedUser);
   }
 
-  void persistAuthData() {
-    authenticationToken != null
-        ? _prefs.setString(_kAuthTokenKey, authenticationToken!)
-        : _prefs.remove(_kAuthTokenKey);
-    refreshToken != null
-        ? _prefs.setString(_kRefreshTokenKey, refreshToken!)
-        : _prefs.remove(_kRefreshTokenKey);
-    tokenExpiration != null
-        ? _prefs.setInt(
-            _kTokenExpirationKey, tokenExpiration!.millisecondsSinceEpoch)
-        : _prefs.remove(_kTokenExpirationKey);
-    uid != null ? _prefs.setString(_kUidKey, uid!) : _prefs.remove(_kUidKey);
-    userData != null
-        ? _prefs.setString(
-            _kUserDataKey, jsonEncode(userData!.toSerializableMap()))
-        : _prefs.remove(_kUserDataKey);
+  Future<void> persistAuthData() async {
+    if (authenticationToken != null) {
+      await _prefs.setString(_kAuthTokenKey, authenticationToken!);
+    } else {
+      await _prefs.remove(_kAuthTokenKey);
+    }
+
+    if (refreshToken != null) {
+      await _prefs.setString(_kRefreshTokenKey, refreshToken!);
+    } else {
+      await _prefs.remove(_kRefreshTokenKey);
+    }
+
+    if (tokenExpiration != null) {
+      await _prefs.setInt(
+        _kTokenExpirationKey,
+        tokenExpiration!.millisecondsSinceEpoch,
+      );
+    } else {
+      await _prefs.remove(_kTokenExpirationKey);
+    }
+
+    if (uid != null) {
+      await _prefs.setString(_kUidKey, uid!);
+    } else {
+      await _prefs.remove(_kUidKey);
+    }
+
+    if (userData != null) {
+      await _prefs.setString(
+        _kUserDataKey,
+        jsonEncode(userData!.toSerializableMap()),
+      );
+    } else {
+      await _prefs.remove(_kUserDataKey);
+    }
   }
 
   DateTime? _tokenExpirationFromJwt(String token) {

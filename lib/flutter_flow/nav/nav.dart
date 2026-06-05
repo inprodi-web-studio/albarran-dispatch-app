@@ -138,6 +138,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'discount',
               ParamType.String,
             ),
+            totalToCharge: params.getParam(
+              'totalToCharge',
+              ParamType.String,
+            ),
           ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),

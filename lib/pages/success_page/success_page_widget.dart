@@ -14,9 +14,11 @@ class SuccessPageWidget extends StatefulWidget {
   const SuccessPageWidget({
     super.key,
     required this.discount,
+    required this.totalToCharge,
   });
 
   final String? discount;
+  final String? totalToCharge;
 
   static String routeName = 'SuccessPage';
   static String routePath = '/successPage';
@@ -162,6 +164,48 @@ class _SuccessPageWidgetState extends State<SuccessPageWidget> {
                         fontStyle:
                             FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                         lineHeight: 1.5,
+                      ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(0.0, 18.0, 0.0, 0.0),
+                child: Text(
+                  'Total a cobrar al cliente:',
+                  textAlign: TextAlign.center,
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w300,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        ),
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        fontSize: 14.0,
+                        letterSpacing: 0.0,
+                        fontWeight: FontWeight.w300,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        lineHeight: 1.5,
+                      ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
+                child: Text(
+                  '\$${widget.totalToCharge}',
+                  textAlign: TextAlign.center,
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        ),
+                        color: FlutterFlowTheme.of(context).tertiary,
+                        fontSize: 34.0,
+                        letterSpacing: 0.0,
+                        fontWeight: FontWeight.w700,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        lineHeight: 1.3,
                       ),
                 ),
               ),

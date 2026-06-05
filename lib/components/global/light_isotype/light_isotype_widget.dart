@@ -40,18 +40,17 @@ class _LightIsotypeWidgetState extends State<LightIsotypeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: Image.asset(
-            'assets/images/a_logo.png',
-            width: 125.0,
-            fit: BoxFit.cover,
-          ),
+    return SizedBox(
+      width: 104.0,
+      height: 34.0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4.0),
+        child: Image.asset(
+          'assets/images/a_logo.png',
+          fit: BoxFit.contain,
+          alignment: Alignment.centerLeft,
         ),
-      ],
+      ),
     );
   }
 }
